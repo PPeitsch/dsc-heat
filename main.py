@@ -2,7 +2,6 @@
 from core import files_names
 from core import read_multiple_files
 import os
-import matplotlib.pyplot as plt
 
 
 # os.walk is a generator
@@ -26,6 +25,8 @@ good_files_exp, bad_files_exp = read_multiple_files(experimental_files)
 good_files_blank, bad_files_blank = read_multiple_files(blank_files)
 
 # printing first 5 results
-print(good_files_exp[0].head(5))
-print(good_files_blank[0].head(5))
+print(f"{good_files_exp[0].head(5)}\n")
+print(f"{good_files_blank[0].head(5)}\n")
+
+
 

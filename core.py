@@ -2,6 +2,7 @@
 import glob
 import pandas as pd
 from pandas.errors import EmptyDataError
+import matplotlib.pyplot as plt
 
 import numpy as np
 from scipy.signal import savgol_filter
@@ -32,15 +33,15 @@ def files_names(directory_list: list, directory_name: str):
 
 # Se itera sobre la variable de archivos experimentales y se separan los datos
 def read_multiple_files(file_list: list,
-                        delimiter: str = ' ',
+                        delimiter: str = '\s+',
                         encoding: str = 'UTF-16LE',
-                        skiprows=14,
+                        skiprows=13,
                         header=None,
                         ):
     """
     Read multiple files from a diretory.
     :param file_list: list().
-    :param delimiter: str, default ' ' (white space), equivalent to setting '\s+'. Delimiter to use.
+    :param delimiter: str, default '\s+' (white space). Delimiter to use.
     :param encoding: str, optional, default = "UTF-16LE".
     :param skiprows: list-like, int or callable, default = 14.
     :param header: int, list of int, None, default ‘infer’, default = None.
@@ -71,6 +72,28 @@ def read_multiple_files(file_list: list,
         except EmptyDataError:
             print(f"No columns to parse from file {one_file}")
             bad_files.append(one_file)
-    print('Done analyzing files.')
+    print('Done analyzing files.\n')
 
     return good_files, bad_files
+
+
+def graph_selection():
+    for file_to_graph in good_files_exp:
+        print(f"Graphing ΦQ (mW) vs t (s): {only_name_exp[i]} vs t")
+        # Gráficos de flujo de calor vs temperatura de muestra
+        fig1 = plt.figure(figsize=(12, 7.68))
+        fig1.patch.set_facecolor("#6D9EC1")
+        fig1.patch.set_alpha(0.15)
+
+        ax = fig1.add_subplot()
+        ax.patch.set_facecolor("#6D9EC1")
+
+        ax.plot(file_to_graph.t, file_to_graph.f, linestyle='-', linewidth=0.5, color = "white", label="ΦQ")
+        ax.set_ylabel('ΦQ (mW)')
+        ax.set_xlabel('t (s)')
+        ax.legend()
+
+        fig1.savefig(f'graficos\{only_name_exp[i]}_vs_t.png')
+        plt.close()
+        i+=1
+    print('Done graphing.')
