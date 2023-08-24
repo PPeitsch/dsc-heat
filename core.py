@@ -1,5 +1,7 @@
 # Dependencies import
 import glob
+from datetime import time
+
 import pandas as pd
 from pandas.errors import EmptyDataError
 import matplotlib.pyplot as plt
@@ -8,6 +10,41 @@ import numpy as np
 from scipy.signal import savgol_filter
 from scipy.signal import medfilt
 from hampel import hampel
+
+
+def tellme(s):
+    print(s)
+    plt.title(s, fontsize=16)   # Cambiar por una ventana, pop up message??
+    plt.draw()                  # Cambiar por una ventana, pop up message??
+
+
+def point_selection():
+    tellme('You will select two points of the plot, click to begin')
+    plt.waitforbuttonpress()
+
+    while True:
+        pts = []
+        while len(pts) < 2:
+            tellme('Select 2 points with the right clic of the mouse')
+            pts = np.asarray(plt.ginput(2, timeout=-1))
+            if len(pts) < 2:
+                tellme('Too few points, starting over')
+                time.sleep(1)  # Wait a second
+
+        ph = plt.fill(pts[:, 0], pts[:, 1], 'r', lw=2)
+
+        tellme('Happy? Key click for yes, mouse click for no')
+
+        if plt.waitforbuttonpress():
+            break
+
+        # Get rid of fill
+        for p in ph:
+            p.remove()
+
+
+def onclick(event):
+    pos = [[event.xdata, event.ydata]]
 
 
 def files_names(directory_list: list, directory_name: str):
@@ -25,8 +62,8 @@ def files_names(directory_list: list, directory_name: str):
 
     # Removing dots and slashes from reading file format
     for fnam in file_list:
-        tmp.append(fnam.rsplit('.', 1)[0])
-        only_names.append(fnam.rsplit('\\', 1)[1])
+        tmp = fnam.rsplit('.', 1)[0]
+        only_names.append(tmp.rsplit('\\', 1)[1])
 
     return only_names, file_list
 
@@ -64,9 +101,7 @@ def read_multiple_files(file_list: list,
                                header=header)
             head = ["idx", "t", "Th", "Tm", "TG", "f"]
             df.columns = head
-            df.drop('TG', inplace=True, axis=1)
-            df.drop('idx', inplace=True, axis=1)
-            df.drop('Th', inplace=True, axis=1)
+            # df.drop(['TG', 'idx', 'Th'], inplace=True, axis=1)
             good_files.append(df)
 
         except EmptyDataError:
@@ -77,23 +112,63 @@ def read_multiple_files(file_list: list,
     return good_files, bad_files
 
 
-def graph_selection():
-    for file_to_graph in good_files_exp:
-        print(f"Graphing ΦQ (mW) vs t (s): {only_name_exp[i]} vs t")
-        # Gráficos de flujo de calor vs temperatura de muestra
-        fig1 = plt.figure(figsize=(12, 7.68))
-        fig1.patch.set_facecolor("#6D9EC1")
-        fig1.patch.set_alpha(0.15)
+def graph_selection(files_to_process: list,
+                    directory_name: str,
+                    file_name: list,
+                    figure_size: tuple,
+                    to_graph: tuple,
+                    x_label: str,
+                    y_label: str,
+                    show_plot: bool = False,
+                    plot_cut: bool = False,
+                    face_color: str = "#6D9EC1",
+                    line_style: str = '-',
+                    line_width: float = 0.5,
+                    line_color: str = 'white',
+                    ):
+    """
+    This is a function to interactively plot.
 
-        ax = fig1.add_subplot()
-        ax.patch.set_facecolor("#6D9EC1")
+    :param files_to_process: list of files to process
+    :param directory_name: directory on the current path
+    :param file_name: file name
+    :param figure_size: tuple with plot size (in) (x, y)
+    :param to_graph: selection of variables to graph
+    :param x_label: x label to add in the plot
+    :param y_label: y label to add in the plot
+    :param show_plot: boolean to show or not the plot, default is False to show the plot
+    :param plot_cut: boolean to indicate if you want cutting a section of the plot
+    :param face_color: face color, default is #6D9EC1
+    :param line_style: line style, default is '-'
+    :param line_width: line width, default is 0.5
+    :param line_color: line color, default is 'white'
+    :return:
+    """
+    for file_to_graph, f_name in zip(files_to_process, file_name):
+        print(f"Graphing {y_label} vs {x_label}: {f_name}")
+        fig = plt.figure(figsize=figure_size)
+        fig.patch.set_facecolor(face_color)  ## por que hay dos set_facecolor??
+        fig.patch.set_alpha(0.15)  ## patch??
 
-        ax.plot(file_to_graph.t, file_to_graph.f, linestyle='-', linewidth=0.5, color = "white", label="ΦQ")
-        ax.set_ylabel('ΦQ (mW)')
-        ax.set_xlabel('t (s)')
+        ax = fig.add_subplot()
+        ax.patch.set_facecolor(face_color)
+
+        ax.plot(file_to_graph[to_graph[1]],
+                file_to_graph[to_graph[0]],
+                linestyle=line_style,
+                linewidth=line_width,
+                color=line_color,
+                label=y_label)
+        ax.set_ylabel(y_label)
+        ax.set_xlabel(x_label)
         ax.legend()
 
-        fig1.savefig(f'graficos\{only_name_exp[i]}_vs_t.png')
+        if plot_cut:
+            point_selection()
+
+        if show_plot:
+            plt.show()
+
+        fig.savefig(f'{directory_name}\{f_name}_{y_label}_vs_{x_label}.png')
         plt.close()
-        i+=1
     print('Done graphing.')
