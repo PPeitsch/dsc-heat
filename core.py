@@ -71,8 +71,7 @@ def point_selection():
             print("Selected points:", pts)
             break
 
-    print(ph)
-    print(pts)
+    return pts
 
 
 def files_names(directory_list: list, directory_name: str):
@@ -191,7 +190,17 @@ def graph_selection(files_to_process: list,
         ax.legend()
 
         if plot_cut:
-            point_selection()
+            points = point_selection()
+            if points.all() is not None and len(points) == 2:
+                left_point, right_point = sorted(points, key=lambda p: p[0])
+
+                # Filter data between the two points
+                mask = (file_to_graph[to_graph[1]] >= left_point[0]) & (file_to_graph[to_graph[1]] <= right_point[0])
+                filtered_data = file_to_graph[mask]
+
+                # Plot the filtered data
+                plt.plot(filtered_data[to_graph[1]], filtered_data[to_graph[0]], label='Filtered Data')
+
         elif show_plot:
             plt.show()
 
