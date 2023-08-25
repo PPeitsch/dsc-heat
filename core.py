@@ -1,6 +1,6 @@
 # Dependencies import
 import glob
-from datetime import time
+import time
 
 import pandas as pd
 from pandas.errors import EmptyDataError
@@ -11,40 +11,68 @@ from scipy.signal import savgol_filter
 from scipy.signal import medfilt
 from hampel import hampel
 
+# for the yes / no window
+import tkinter as tk
+from tkinter import *
+from tkinter import messagebox as mb
 
-def tellme(s):
-    print(s)
-    plt.title(s, fontsize=16)   # Cambiar por una ventana, pop up message??
-    plt.draw()                  # Cambiar por una ventana, pop up message??
+# New import for user input
+from tkinter import simpledialog
+
+
+def ask_user_input(prompt):
+    root = tk.Tk()
+    root.withdraw()  # Hide the main window
+
+    user_input = simpledialog.askstring("Input", prompt)
+    root.destroy()  # Clean up the hidden window
+
+    return user_input
 
 
 def point_selection():
-    tellme('You will select two points of the plot, click to begin')
-    plt.waitforbuttonpress()
+    win1 = tk.Tk()
+    win1.withdraw()  # Hide the main window
+
+    # Pause and ask if the user is ready to select points
+    ready = mb.askyesno("Ready?", "Are you ready to select two points using the right mouse click?")
+
+    win1.destroy()  # Clean up the hidden window
+
+    if not ready:
+        return
 
     while True:
         pts = []
-        while len(pts) < 2:
-            tellme('Select 2 points with the right clic of the mouse')
-            pts = np.asarray(plt.ginput(2, timeout=-1))
-            if len(pts) < 2:
-                tellme('Too few points, starting over')
-                time.sleep(1)  # Wait a second
+        ph = None
+
+        mb.showinfo('Select 2 points', 'Use the mouse right click to select two points.')
+        pts = np.asarray(plt.ginput(2, timeout=-1))
+        print(pts)
+        print(ph)
+
+        if len(pts) != 2:
+            mb.showinfo('Error', 'Please select exactly two points.')
+            continue
 
         ph = plt.fill(pts[:, 0], pts[:, 1], 'r', lw=2)
+        print(pts)
+        print(ph)
 
-        tellme('Happy? Key click for yes, mouse click for no')
+        win2 = tk.Tk()
+        win2.withdraw()  # Hide the main window
 
-        if plt.waitforbuttonpress():
+        # Ask if the user is happy with the selection
+        happy = mb.askyesno("Happy?", "Are you happy with the selected points?")
+
+        win2.destroy()  # Clean up the hidden window
+
+        if happy:
+            print("Selected points:", pts)
             break
 
-        # Get rid of fill
-        for p in ph:
-            p.remove()
-
-
-def onclick(event):
-    pos = [[event.xdata, event.ydata]]
+    print(ph)
+    print(pts)
 
 
 def files_names(directory_list: list, directory_name: str):
@@ -57,7 +85,6 @@ def files_names(directory_list: list, directory_name: str):
     list_index = directory_list.index(directory_name)
     file_list = glob.glob(directory_list[list_index] + '\*.txt', recursive=False)
 
-    tmp = []
     only_names = []
 
     # Removing dots and slashes from reading file format
@@ -147,8 +174,8 @@ def graph_selection(files_to_process: list,
     for file_to_graph, f_name in zip(files_to_process, file_name):
         print(f"Graphing {y_label} vs {x_label}: {f_name}")
         fig = plt.figure(figsize=figure_size)
-        fig.patch.set_facecolor(face_color)  ## por que hay dos set_facecolor??
-        fig.patch.set_alpha(0.15)  ## patch??
+        fig.patch.set_facecolor(face_color)  # por que hay dos set_facecolor??
+        fig.patch.set_alpha(0.15)  # patch??
 
         ax = fig.add_subplot()
         ax.patch.set_facecolor(face_color)
@@ -165,8 +192,7 @@ def graph_selection(files_to_process: list,
 
         if plot_cut:
             point_selection()
-
-        if show_plot:
+        elif show_plot:
             plt.show()
 
         fig.savefig(f'{directory_name}\{f_name}_{y_label}_vs_{x_label}.png')

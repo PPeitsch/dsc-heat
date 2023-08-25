@@ -101,6 +101,4 @@ graph_selection(files_sub,
                 exp_list_names,
                 figure_size,
                 to_graph, x_label, y_label,
-                show_plot=True,
                 plot_cut=True)
-
