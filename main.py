@@ -2,6 +2,7 @@
 from core import files_names
 from core import read_multiple_files
 from core import graph_selection
+from core import generate_baseline
 import os
 
 # os.walk is a generator
@@ -56,11 +57,9 @@ graph_selection(good_files_exp,
                 figure_size,
                 to_graph, x_label, y_label)
 
-# Create an empty list to store the data
+# blank subtraction
 files_sub = []
-# creamos variable para iterar
-length = len(good_files_exp)
-for n in range(length):
+for n in range(len(good_files_exp)):
     files_sub.append(good_files_exp[n] - good_files_blank[n])
     files_sub[n].t = good_files_exp[n].t
     files_sub[n].Th = good_files_exp[n].Th
@@ -96,9 +95,27 @@ y_label = 'ΦQ(mW) sub - cutted'
 directory_name = 'graficos'
 figure_size = (12, 7.68)
 to_graph = ('f', 't')
-graph_selection(files_sub,
+data_after_cut = graph_selection(files_sub,
+                                 directory_name,
+                                 exp_list_names,
+                                 figure_size,
+                                 to_graph, x_label, y_label,
+                                 plot_cut=True)
+
+
+baseline_curves = generate_baseline(data_after_cut)
+
+# heat flow substracted vs time, cut selection of the plot including generated baseline
+x_label = 't(s)'
+y_label = 'ΦQ(mW) sub - cutted - bas'
+directory_name = 'graficos'
+figure_size = (12, 7.68)
+to_graph = ('f', 't')
+graph_selection(data_after_cut,
                 directory_name,
                 exp_list_names,
                 figure_size,
                 to_graph, x_label, y_label,
-                plot_cut=True)
+                plot_baseline=True,
+                baseline_data=baseline_curves,
+                show_plot=True)

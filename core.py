@@ -151,6 +151,11 @@ def graph_selection(files_to_process: list,
                     line_style: str = '-',
                     line_width: float = 0.5,
                     line_color: str = 'white',
+                    plot_baseline: bool = False,
+                    baseline_data: list = None,
+                    baseline_color: str = 'red',
+                    baseline_style: str = 'dotted',
+                    baseline_width: float = 1.0,
                     ):
     """
     This is a function to interactively plot.
@@ -163,13 +168,21 @@ def graph_selection(files_to_process: list,
     :param x_label: x label to add in the plot
     :param y_label: y label to add in the plot
     :param show_plot: boolean to show or not the plot, default is False to show the plot
-    :param plot_cut: boolean to indicate if you want cutting a section of the plot
+    :param plot_cut: boolean to indicate a cutoff section of the plot
     :param face_color: face color, default is #6D9EC1
     :param line_style: line style, default is '-'
     :param line_width: line width, default is 0.5
     :param line_color: line color, default is 'white'
+    :param plot_baseline: boolean to indicate if baseline should be plotted
+    :param baseline_data: data for the baseline plot
+    :param baseline_color: color of the baseline, default is 'red'
+    :param baseline_style: style of the baseline, default is 'dotted'
+    :param baseline_width: width of the baseline, default is 1.0
     :return:
     """
+
+    data_after_cut = []
+
     for file_to_graph, f_name in zip(files_to_process, file_name):
         print(f"Graphing {y_label} vs {x_label}: {f_name}")
         fig = plt.figure(figsize=figure_size)
@@ -199,11 +212,77 @@ def graph_selection(files_to_process: list,
                 filtered_data = file_to_graph[mask]
 
                 # Plot the filtered data
-                plt.plot(filtered_data[to_graph[1]], filtered_data[to_graph[0]], label='Filtered Data')
+                plt.plot(filtered_data[to_graph[1]],
+                         filtered_data[to_graph[0]],
+                         label='Filtered Data')
+
+                data_after_cut.append(filtered_data)
 
         elif show_plot:
             plt.show()
 
+        if plot_baseline and baseline_data is not None:
+            for baseline_curve_data in baseline_data:
+                baseline_x = baseline_curve_data[0]
+                baseline_y = baseline_curve_data[1]
+                plt.plot(baseline_x, baseline_y,
+                         linestyle=baseline_style,
+                         linewidth=baseline_width,
+                         color=baseline_color,
+                         label='Baseline')
+
         fig.savefig(f'{directory_name}\{f_name}_{y_label}_vs_{x_label}.png')
         plt.close()
     print('Done graphing.')
+    return data_after_cut
+
+
+def generate_baseline(curves: list):
+    """
+    Generate baseline curves for given peaks and points.
+
+    :param curves: List of curves, where each curve is represented as a 2D numpy array
+                   with shape (n_points, 2) containing x and y values.
+    :return: List of baseline curves corresponding to each input curve.
+    """
+    baseline_curves = []
+
+    for curve in curves:
+        x_values = curve.iloc[:, 0]
+        y_values = curve.iloc[:, 1]
+
+        # baseline calculation
+        baseline_curve = calculate_baseline(x_values, y_values)
+        baseline_curves.append([x_values, baseline_curve])
+
+    return baseline_curves
+
+
+def calculate_baseline(x_values, y_values):
+    """
+    Calculate the baseline for a given curve using a equation proposed by U. Bandara,
+    "A SYSTEMATIC SOLUTION TO THE PROBLEM OF SAMPLE BACKGROUND CORRECTION IN DSC CURVES",
+    Journal of Thermal Analysis, Vol. 31 (1986) 1063-1071
+
+    :param x_values: Array of x values.
+    :param y_values: Array of y values.
+    :return: Array of baseline y values.
+    """
+    baseline = y_values - 0.1 * x_values
+
+    ## Interpolación desde el punto Amin al punto de onset, Pmin
+    interpolation = Smooth_Flux_Curves{i}(Idx_Amin{i}) + ...
+    ((EXP_FILES_cell{i}(Idx_Amin{i}:Idx_Pmin{i}, 2) - EXP_FILES_cell{i}(Idx_Amin{i}, 2)) / (EXP_FILES_cell{i}(Idx_Pmin{i}, 2) -
+    EXP_FILES_cell{i}(Idx_Amin{i}, 2))) * (Smooth_Flux_Curves{i}(Idx_Pmin{i}) - (Smooth_Flux_Curves{i}(Idx_Amin{i})));
+    ## Extrapolación desde el punto de onset al punto de offset
+    ExtrapolatedLines1{i} = interp1(EXP_FILES_cell{i}(Idx_Amin{i}: Idx_Pmin{i}, 2), InterpolatedLines1{i},
+    EXP_FILES_cell{i}(Idx_Pmin{i}: Idx_Pmax{i}, 2), 'linear', 'extrap');
+
+    ## Interpolación desde el punto Amax al punto de offset, Pmax
+    InterpolatedLines2{i} = Smooth_Flux_Curves{i}(Idx_Pmax{i}) +
+    ((EXP_FILES_cell{i}(Idx_Pmax{i}:Idx_Amax{i}, 2) - EXP_FILES_cell{i}(Idx_Pmax{i}, 2)) / (EXP_FILES_cell{i}(Idx_Amax{i}, 2) -
+    EXP_FILES_cell{i}(Idx_Pmax{i}, 2))) * (Smooth_Flux_Curves{i}(Idx_Amax{i}) - (Smooth_Flux_Curves{i}(Idx_Pmax{i})));
+    ## Extrapolación desde el punto de offset al punto de onset
+    ExtrapolatedLines2{i} = interp1(EXP_FILES_cell{i}(Idx_Pmax{i}: Idx_Amax{i}, 2),
+    InterpolatedLines2{i}, EXP_FILES_cell{i}(Idx_Pmin{i}: Idx_Pmax{i}, 2), 'linear', 'extrap');
+    return baseline
